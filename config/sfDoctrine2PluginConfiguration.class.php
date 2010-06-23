@@ -50,6 +50,20 @@ class sfDoctrine2PluginConfiguration extends sfPluginConfiguration
     $classLoader->setIncludePath(__DIR__.'/../lib/vendor/doctrine/lib/vendor');
     $classLoader->register();
 
+    // Entities Classes
+    $classLoader = new \Doctrine\Common\ClassLoader('Entities', sfConfig::get('sf_lib_dir').DIRECTORY_SEPARATOR.'entities'.DIRECTORY_SEPARATOR.'doctrine');
+    $classLoader->register();
+
+    $classLoader = new \Doctrine\Common\ClassLoader('Repositories', sfConfig::get('sf_lib_dir').DIRECTORY_SEPARATOR.'entities'.DIRECTORY_SEPARATOR.'doctrine');
+    $classLoader->register();
+
+    $classLoader = new \Doctrine\Common\ClassLoader('Proxies', sfConfig::get('sf_lib_dir'));
+    $classLoader->register();
+
+    // Document classes
+    $classLoader = new \Doctrine\Common\ClassLoader('Documents', sfConfig::get('sf_lib_dir'));
+    $classLoader->register();
+
     $this->dispatcher->connect('component.method_not_found', array($this, 'componentMethodNotFound'));
   }
 
@@ -123,6 +137,29 @@ class sfDoctrine2PluginConfiguration extends sfPluginConfiguration
         }
       }
       return false;
+    }
+    elseif ($method == 'getDocumentManager')
+    {
+      $databaseManager = $actions->getContext()->getDatabaseManager();
+      $names = $databaseManager->getNames();
+      if ($args)
+      {
+        $name = $args[0];
+        if (!in_array($name, $names))
+        {
+          throw new sfException(
+            sprintf('Could not get the document manager for '.
+                    'the database connection named: "%s"', $name)
+          );
+        }
+        $database = $databaseManager->getDatabase($args[0]);
+      } else {
+        $database = $databaseManager->getDatabase(end($names));
+      }
+
+      $event->setReturnValue($database->getDocumentManager());
+
+      return true;
     }
     else
     {

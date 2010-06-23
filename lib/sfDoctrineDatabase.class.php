@@ -24,6 +24,8 @@ class sfDoctrineDatabase extends sfDatabase
 {
   protected $em;
 
+  protected $dm;
+
   public function initialize($parameters = array())
   {
     parent::initialize($parameters);
@@ -87,6 +89,17 @@ class sfDoctrineDatabase extends sfDatabase
     }
 
     ActiveEntity::setEntityManager($this->em);
+
+    // ODM MongoDB
+    $config = new Doctrine\ODM\MongoDB\Configuration;
+    $config->setProxyDir(sfConfig::get('sf_lib_dir') . '/Proxies');
+    $config->setProxyNamespace('Proxies');
+
+    $reader = new Doctrine\Common\Annotations\AnnotationReader;
+    $reader->setDefaultAnnotationNamespace('Doctrine\ODM\MongoDB\Mapping\\');
+    $config->setMetadataDriverImpl(new Doctrine\ODM\MongoDB\Mapping\Driver\AnnotationDriver($reader, sfConfig::get('sf_lib_dir').DIRECTORY_SEPARATOR.'Documents'));
+
+    $this->dm = Doctrine\ODM\MongoDB\DocumentManager::create(new \Doctrine\ODM\MongoDB\Mongo, $config);
   }
 
   public function connect()
@@ -102,5 +115,10 @@ class sfDoctrineDatabase extends sfDatabase
   public function getEntityManager()
   {
     return $this->em;
+  }
+
+  public function getDocumentManager()
+  {
+    return $this->dm;
   }
 }
